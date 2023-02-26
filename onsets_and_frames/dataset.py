@@ -108,6 +108,8 @@ class PianoRollAudioDataset(Dataset):
             return torch.load(saved_data_path)
 
         audio, sr = soundfile.read(audio_path, dtype='int16')
+        if(len(audio.shape)==2):
+            audio = (audio[:, 0]/2) + (audio[:, 1]/2)
         assert sr == SAMPLE_RATE
 
         audio = torch.ShortTensor(audio)
@@ -215,6 +217,26 @@ class GuitarSet(PianoRollAudioDataset):
 
         return sorted(zip(flacs, tsvs, tabs))
     
+class My_dataset(PianoRollAudioDataset):
+    def __init__(self, path='data/my_dataset', groups=None, sequence_length=None, seed=42, device=DEFAULT_DEVICE):
+        super().__init__(path, groups if groups is not None else [f[:-4] for f in os.listdir(path+"/audio/")], sequence_length, seed, device)
+        
+    @classmethod
+    def available_groups(cls):
+        return [file[:-4] for file in os.listdir("data/my_dataset/audio")]
+    
+    def files(self, group):
+        flacs = glob(os.path.join(self.path, 'flac', '%s.flac' % group))
+        tsvs = [f.replace('/flac/', '/tsv/').replace('.flac', '.tsv') for f in flacs]
+        tabs = [f.replace('/flac/', '/tab/').replace('.flac', '.npy') for f in flacs]
+        
+        assert(all(os.path.isfile(flac) for flac in flacs))
+        assert(all(os.path.isfile(tsv) for tsv in tsvs))
+        assert(all(os.path.isfile(tab) for tab in tabs))
+        
+        return sorted(zip(flacs, tsvs, tabs))
+
+
     
 class IDMT_SMT_frst_tones(PianoRollAudioDataset):
     def __init__(self, path='data/IDMT-SMT/dataset1/FenderStratCleanNeckSC/', groups=None, sequence_length=None, seed=42, device=DEFAULT_DEVICE):
@@ -271,18 +293,20 @@ class IDMT_SMT_scnd(PianoRollAudioDataset):
     
     
 class IDMT_SMT_thrd(PianoRollAudioDataset):
-    def __init__(self, path='data/IDMT-SMT/dataset2', groups=None, sequence_length=None, seed=42, device=DEFAULT_DEVICE):
-        super().__init__(path, groups if groups is not None else ['AR', 'FS'], sequence_length, seed, device)
+    def __init__(self, path='data/IDMT-SMT/dataset3', groups=None, sequence_length=None, seed=42, device=DEFAULT_DEVICE):
+        super().__init__(path, groups if groups is not None else [f[:-4] for f in os.listdir(path+"/audio/")], sequence_length, seed, device)
 
     @classmethod
     def available_groups(cls):
-        return ['AR', 'FS', 'LP']
+        return [f[:-4] for f in os.listdir("data/IDMT-SMT/dataset3/audio/")]
 
     def files(self, group):
-        flacs = glob(os.path.join(self.path, 'flac', '%s_*.flac' % group))
+        flacs = glob(os.path.join(self.path, 'flac', '%s.flac' % group))
         tsvs = [f.replace('/flac/', '/tsv/').replace('.flac', '.tsv') for f in flacs]
+        tabs = [f.replace('/flac/', '/tabs/').replace('.flac', '.npy') for f in flacs]
 
         assert(all(os.path.isfile(flac) for flac in flacs))
         assert(all(os.path.isfile(tsv) for tsv in tsvs))
+        assert(all(os.path.isfile(tab) for tab in tabs))
 
-        return sorted(zip(flacs, tsvs))
+        return sorted(zip(flacs, tsvs, tabs))

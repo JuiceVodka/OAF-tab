@@ -13,6 +13,7 @@ from tqdm import tqdm
 
 import onsets_and_frames.dataset as dataset_module
 from onsets_and_frames import *
+import math
 
 eps = sys.float_info.epsilon
 
@@ -55,6 +56,12 @@ def pitchRecall(prediction, truth):
 def tabPrecision(prediction, truth):
     tabPred = np.array(list(map(tabToVec, prediction)))
     tabTruth = np.array(list(map(tabToVec, truth)))
+    #print(tabTruth[0:5, :, :])
+    #print("-------------------")
+    #print(tabPred[0:5, :, :])
+    #print("===================")
+    #print(np.where(tabTruth == 1))
+    #print(tabPred[100:, :, :])
     precision = np.sum(np.multiply(tabPred, tabTruth).flatten()) / np.sum(tabPred.flatten())
     return precision
 
@@ -71,6 +78,8 @@ def fMeasure(prediction, truth, isTab):
     precision = tabPrecision(prediction, truth) if isTab else pitchPrecision(prediction, truth)
     recall = tabRecall(prediction, truth) if isTab else pitchRecall(prediction, truth)
     f = (2 * precision * recall) / (precision + recall)
+    if(math.isnan(f)):
+        return 0
     return f
 
 
@@ -158,7 +167,7 @@ def evaluate(data, model, onset_threshold=0.5, frame_threshold=0.5, save_path=No
         metrics['metric/tab/tab-fScore'].append(fMeasure(predTab, labelTab, True))
         
         
-        predTabComb = pred['comb_tab'].cpu().numpy()
+        predTabComb = pred['combinedtab'].cpu().numpy()
         
         metrics['metric/tab-comb/pitch-precision'].append(pitchPrecision(predTabComb, labelTab))
         metrics['metric/tab-comb/pitch-recall'].append(pitchRecall(predTabComb, labelTab))
@@ -166,6 +175,26 @@ def evaluate(data, model, onset_threshold=0.5, frame_threshold=0.5, save_path=No
         metrics['metric/tab-comn/tab-precision'].append(tabPrecision(predTabComb, labelTab))
         metrics['metric/tab-comb/tab-recall'].append(tabRecall(predTabComb, labelTab))
         metrics['metric/tab-comb/tab-fScore'].append(fMeasure(predTabComb, labelTab, True))
+        
+        
+        """predTabBin = pred['tab_binary'].cpu().numpy()
+        
+        metrics['metric/tab-binary/pitch-precision'].append(pitchPrecision(predTabBin, labelTab))
+        metrics['metric/tab-binary/pitch-recall'].append(pitchRecall(predTabBin, labelTab))
+        metrics['metric/tab-binary/pitch-fScore'].append(fMeasure(predTabBin, labelTab, False))
+        metrics['metric/tab-binary/tab-precision'].append(tabPrecision(predTabBin, labelTab))
+        metrics['metric/tab-binary/tab-recall'].append(tabRecall(predTabBin, labelTab))
+        metrics['metric/tab-binary/tab-fScore'].append(fMeasure(predTabBin, labelTab, True))
+        
+        
+        predTabCombBin = pred['comb_tab_binary'].cpu().numpy()
+        
+        metrics['metric/tab-comb-binary/pitch-precision'].append(pitchPrecision(predTabCombBin, labelTab))
+        metrics['metric/tab-comb-binary/pitch-recall'].append(pitchRecall(predTabCombBin, labelTab))
+        metrics['metric/tab-comb-binary/pitch-fScore'].append(fMeasure(predTabCombBin, labelTab, False))
+        metrics['metric/tab-comn-binary/tab-precision'].append(tabPrecision(predTabCombBin, labelTab))
+        metrics['metric/tab-comb-binary/tab-recall'].append(tabRecall(predTabCombBin, labelTab))
+        metrics['metric/tab-comb-binary/tab-fScore'].append(fMeasure(predTabCombBin, labelTab, True))"""
         
         """print(f"Tab pitch precission: {pitchPrecision(predTab, labelTab)}")
         print(f"Tab pitch recall: {pitchRecall(predTab, labelTab)}")
@@ -201,7 +230,9 @@ def evaluate_file(model_file, dataset, dataset_group, sequence_length, save_path
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('model_file', type=str)
-    parser.add_argument('dataset', nargs='?', default='GuitarSet')
+    #parser.add_argument('dataset', nargs='?', default='GuitarSet')
+    #parser.add_argument('dataset', nargs='?', default='My_dataset')
+    parser.add_argument('dataset', nargs='?', default='IDMT_SMT_thrd')
     parser.add_argument('dataset_group', nargs='?', default=None)
     parser.add_argument('--save-path', default=None)
     parser.add_argument('--sequence-length', default=None, type=int)
